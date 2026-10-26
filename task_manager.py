@@ -1,3 +1,5 @@
+import json
+
 class Task:
 
     def __init__(self, id, description, completed=False):
@@ -11,19 +13,23 @@ class Task:
 
 class TaskManager:
 
+    FILENAME = "tasks.json"
+
     def __init__(self):
         self._tasks = []
         self.next_id = 1
+        self.load_tasks()
 
     def add_task(self, description):
         task = Task(self.next_id, description)
         self._tasks.append(task)
         self.next_id += 1
-        print(f"Task added: {description}")
+        print(f"Tarea añadida: {description}")
+        self.save_tasks()
 
     def list_tasks(self):
         if not self._tasks:
-            print("No tasks available.")
+            print("No hay tareas disponibles.")
         else:
             for task in self._tasks:
                 print(task)
@@ -32,16 +38,39 @@ class TaskManager:
         for task in self._tasks:
             if task.id == id:
                 task.completed = True
-                print(f"Task #{id} marked as completed.")
+                print(f"Tarea #{id} marcada como completada.")
+                self.save_tasks()
                 return
-        print(f"Task #{id} not found.")
-        
+        print(f"Tarea #{id} no encontrada.")
 
     def delete_task(self, id):
         for task in self._tasks:
             if task.id == id:
                 self._tasks.remove(task)
-                print(f"Task #{id} deleted.")
+                print(f"Tarea #{id} eliminada.")
+                self.save_tasks()
                 return
-        print(f"Task #{id} not found.")
+        print(f"Tarea #{id} no encontrada.")
 
+    def load_tasks(self):
+        try:
+            with open(self.FILENAME, "r") as file:
+                data = json.load(file)
+                self._tasks = [Task(item['id'], item['description'], item['completed']) for item in data]
+                if self._tasks:
+                    self.next_id = self._tasks[-1].id + 1
+                else:
+                    self.next_id = 1
+
+        except FileNotFoundError:
+            print("Archivo de tareas no encontrado. Se creará uno nuevo al guardar.")
+            return
+        
+
+    def save_tasks(self):
+        with open(self.FILENAME, "w") as file:
+            json.dump([{
+                "id": task.id,
+                "description": task.description,
+                "completed": task.completed
+            } for task in self._tasks], file, indent=4)
